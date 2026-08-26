@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}الملف الشخصي{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 class="page__title">الملف الشخصي</h1>
+    <div class="profile-card">
+        <div class="profile-card__avatar">
+            {% if current_user.avatar_url %}
+            <img src="{{ current_user.avatar_url }}" alt="avatar">
+            {% else %}
+            <div class="profile-card__avatar-placeholder">{{ current_user.name[0] }}</div>
+            {% endif %}
+        </div>
+        <div class="profile-card__info">
+            <h2>{{ current_user.name }}</h2>
+            <p>{{ current_user.email }}</p>
+            <span class="badge">{{ current_user.role.value }}</span>
+            {% if current_user.bio %}<p class="profile-bio">{{ current_user.bio }}</p>{% endif %}
+        </div>
+        <a href="/profile/edit" class="btn btn--secondary">تعديل</a>
+    </div>
+
+    <h2 class="section-title">مهاراتي</h2>
+    <div class="skills-grid">
+        {% for skill in skills %}
+        <div class="card">
+            <div class="card__header"><h3>{{ skill.skill.name if skill.skill else 'مهارة' }}</h3></div>
+            <div class="card__body">
+                <div class="progress-bar">
+                    <div class="progress-bar__fill" style="width: {{ skill.mastery_score * 100 }}%"></div>
+                </div>
+                <p>{{ skill.proficiency.value }} - {{ (skill.mastery_score * 100) | round(0) }}%</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

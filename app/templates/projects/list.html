@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}المشاريع{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 class="page__title">المشاريع</h1>
+    <div class="grid">
+        {% for project in projects %}
+        <div class="card card--clickable" onclick="window.location='/projects/{{ project.id }}'">
+            <div class="card__header">
+                <h3>{{ project.title }}</h3>
+                <span class="badge badge--{{ project.difficulty }}">{{ project.difficulty }}</span>
+            </div>
+            <div class="card__body">
+                <p>{{ project.description or '' }}</p>
+                <p class="meta">اللغة: {{ project.language }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

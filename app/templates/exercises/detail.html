@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 class="page__title">{{ exercise.title }}</h1>
+    <p class="page__subtitle">{{ exercise.description or '' }}</p>
+    <div class="badges">
+        <span class="badge badge--{{ exercise.difficulty }}">{{ exercise.difficulty }}</span>
+        <span class="badge">{{ exercise.exercise_type.value }}</span>
+        <span class="badge">{{ exercise.points }} نقطة</span>
+    </div>
+
+    {% if exercise.exercise_type.value == 'code' %}
+    <div class="exercise-code">
+        <h2 class="section-title">محرر الكود</h2>
+        <textarea id="codeEditor" class="code-editor" placeholder="اكتب كودك هنا...">{{ exercise.starter_code or '' }}</textarea>
+        <div class="exercise-actions">
+            <button class="btn btn--primary" onclick="runCode()">تشغيل</button>
+            <button class="btn btn--secondary" onclick="requestHint()">طلب تلميح</button>
+            <button class="btn btn--secondary" onclick="requestReview()">مراجعة الكود</button>
+        </div>
+        <div id="codeOutput" class="code-output"></div>
+    </div>
+    {% else %}
+    <div class="exercise-answer">
+        <h2 class="section-title">إجابتك</h2>
+        {% if exercise.choices %}
+        <div class="choices">
+            {% for choice in exercise.choices %}
+            <label class="choice">
+                <input type="radio" name="answer" value="{{ choice }}"> {{ choice }}
+            </label>
+            {% endfor %}
+        </div>
+        {% else %}
+        <textarea id="answerField" class="answer-field" placeholder="اكتب إجابتك هنا..."></textarea>
+        {% endif %}
+        <button class="btn btn--primary" onclick="submitAnswer()">إرسال</button>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+const exerciseId = '{{ exercise.id }}';
+
+async function runCode() {
+    const code = document.getElementById('codeEditor').value;
+    const output = document.getElementById('codeOutput');
+    output.innerHTML = '<p>جاري التشغيل...</p>';
+    const res = await fetch('/api/v1/code-execution/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code, language: '{{ exercise.language }}'})
+    });
+    const data = await res.json();
+    output.innerHTML = `<pre>${data.output || ''}${data.error ? '\nError: ' + data.error : ''}</pre>`;
+}
+
+async function submitAnswer() {
+    let answer;
+    const selected = document.querySelector('input[name="answer"]:checked');
+    if (selected) { answer = selected.value; }
+    else { answer = document.getElementById('answerField').value; }
+    const res = await fetch('/api/v1/exercises/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({exercise_id: exerciseId, answer})
+    });
+    const data = await res.json();
+    alert(data.status === 'passed' ? 'إجابة صحيحة!' : 'إجابة خاطئة، حاول مرة أخرى');
+}
+
+async function requestHint() {
+    const code = document.getElementById('codeEditor').value;
+    const res = await fetch('/api/v1/ai/tutor', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({question: 'أحتاج تلميحاً لحل هذا التمرين', current_code: code, exercise_id: exerciseId})
+    });
+    const data = await res.json();
+    document.getElementById('codeOutput').innerHTML = `<div class="ai-hint">${data.response}</div>`;
+}
+
+async function requestReview() {
+    const code = document.getElementById('codeEditor').value;
+    const res = await fetch('/api/v1/ai/code-review', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code, language: '{{ exercise.language }}'})
+    });
+    const data = await res.json();
+    document.getElementById('codeOutput').innerHTML = `<div class="ai-review"><h4>مراجعة الكود</h4><pre>${JSON.stringify(data.analysis, null, 2)}</pre></div>`;
+}
+</script>
+{% endblock %}

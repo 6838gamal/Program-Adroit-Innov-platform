@@ -1,0 +1,13 @@
+{# Reusable card component #}
+{# Usage: {% include 'components/card.html' with context #}
+<div class="card">
+    {% if card_title %}
+    <div class="card__header">
+        <h3 class="card__title">{{ card_title }}</h3>
+        {% if card_action %}<a href="{{ card_action_url }}" class="card__action">{{ card_action }}</a>{% endif %}
+    </div>
+    {% endif %}
+    <div class="card__body">
+        {{ card_content | safe if card_content else '' }}
+    </div>
+</div>

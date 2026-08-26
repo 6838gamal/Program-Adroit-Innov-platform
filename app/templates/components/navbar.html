@@ -1,0 +1,28 @@
+<nav class="navbar">
+    <div class="navbar__container">
+        <a href="/" class="navbar__logo">منصة البرمجة</a>
+        <button class="navbar__toggle" onclick="toggleMenu()">☰</button>
+        <div class="navbar__menu" id="navMenu">
+            {% if current_user %}
+                <a href="/dashboard" class="navbar__link">لوحة التحكم</a>
+                <a href="/courses" class="navbar__link">الدورات</a>
+                <a href="/learning-paths" class="navbar__link">مسارات التعلم</a>
+                <a href="/exercises" class="navbar__link">التمارين</a>
+                <a href="/projects" class="navbar__link">المشاريع</a>
+                {% if current_user.role.value in ('instructor', 'org_admin', 'platform_admin') %}
+                    <a href="/instructor" class="navbar__link">المعلم</a>
+                {% endif %}
+                {% if current_user.role.value in ('org_admin', 'platform_admin') %}
+                    <a href="/organization" class="navbar__link">المؤسسة</a>
+                {% endif %}
+                {% if current_user.role.value == 'platform_admin' %}
+                    <a href="/admin" class="navbar__link">الإدارة</a>
+                {% endif %}
+                <a href="/profile" class="navbar__link">{{ current_user.name }}</a>
+                <a href="/auth/logout" class="navbar__link navbar__link--danger">خروج</a>
+            {% else %}
+                <a href="/auth/login" class="navbar__link navbar__link--primary">تسجيل الدخول بـ Google</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

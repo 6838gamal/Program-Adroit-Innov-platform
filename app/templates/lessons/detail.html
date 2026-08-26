@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 class="page__title">{{ lesson.title }}</h1>
+    <p class="page__subtitle">{{ lesson.description or '' }}</p>
+
+    <div class="lesson-content">
+        {{ lesson.content | safe if lesson.content else '' }}
+    </div>
+
+    {% if lesson.video_url %}
+    <div class="lesson-video">
+        <iframe src="{{ lesson.video_url }}" frameborder="0" allowfullscreen></iframe>
+    </div>
+    {% endif %}
+
+    <h2 class="section-title">المفاهيم</h2>
+    {% for concept in concepts %}
+    <div class="card">
+        <div class="card__header"><h3>{{ concept.title }}</h3></div>
+        <div class="card__body">
+            <p>{{ concept.description or '' }}</p>
+            {{ concept.content | safe if concept.content else '' }}
+        </div>
+    </div>
+    {% endfor %}
+
+    <h2 class="section-title">التمارين</h2>
+    <div class="grid">
+        {% for exercise in exercises %}
+        <div class="card card--clickable" onclick="window.location='/exercises/{{ exercise.id }}'">
+            <div class="card__header"><h3>{{ exercise.title }}</h3></div>
+            <div class="card__body">
+                <span class="badge badge--{{ exercise.difficulty }}">{{ exercise.difficulty }}</span>
+                <span class="badge">{{ exercise.exercise_type.value }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة المعلم{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 class="page__title">لوحة المعلم</h1>
+    <div class="grid">
+        <div class="card">
+            <div class="card__header"><h3>إنشاء دورة</h3></div>
+            <div class="card__body">
+                <a href="/courses/create" class="btn btn--primary">دورة جديدة</a>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card__header"><h3>إنشاء تمرين</h3></div>
+            <div class="card__body">
+                <a href="/exercises/create" class="btn btn--primary">تمرين جديد</a>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card__header"><h3>إنشاء مشروع</h3></div>
+            <div class="card__body">
+                <a href="/projects/create" class="btn btn--primary">مشروع جديد</a>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="section-title">أداء الطلاب</h2>
+    <div class="grid">
+        {% for student in students %}
+        <div class="card">
+            <div class="card__header"><h3>{{ student.name }}</h3></div>
+            <div class="card__body">
+                <p>المستوى: {{ student.skill_level if student.skill_level else 'مبتدئ' }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

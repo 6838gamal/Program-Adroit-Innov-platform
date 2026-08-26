@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}الدورات{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 class="page__title">الدورات</h1>
+    <div class="grid">
+        {% for course in courses %}
+        <div class="card card--clickable" onclick="window.location='/courses/{{ course.id }}'">
+            <div class="card__header">
+                <h3>{{ course.title }}</h3>
+                <span class="badge badge--{{ course.difficulty }}">{{ course.difficulty }}</span>
+            </div>
+            <div class="card__body">
+                <p>{{ course.description or '' }}</p>
+                <p class="meta">اللغة: {{ course.language }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

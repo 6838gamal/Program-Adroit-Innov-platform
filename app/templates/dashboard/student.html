@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard__header">
+        <h1 class="dashboard__title">أهلاً، {{ current_user.name }}</h1>
+        <p class="dashboard__subtitle">تابع تقدمك في رحلة تعلم البرمجة</p>
+    </div>
+
+    <div class="dashboard__grid">
+        <div class="card">
+            <div class="card__header"><h3>مسارات التعلم</h3></div>
+            <div class="card__body">
+                <p class="stat">{{ enrollments | length }} مسار نشط</p>
+                <a href="/learning-paths" class="btn btn--secondary">عرض الكل</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__header"><h3>المهارات</h3></div>
+            <div class="card__body">
+                <p class="stat">{{ skills | length }} مهارة</p>
+                <a href="/skills" class="btn btn--secondary">ملف المهارات</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__header"><h3>التمارين</h3></div>
+            <div class="card__body">
+                <p class="stat">{{ submissions | length }} محاولة</p>
+                <a href="/exercises" class="btn btn--secondary">التمارين</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__header"><h3>المدرس الذكي</h3></div>
+            <div class="card__body">
+                <p class="stat">اسأل المدرس الذكي عن أي سؤال</p>
+                <a href="/ai/tutor" class="btn btn--primary">ابدأ المحادثة</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard__section">
+        <h2 class="section-title">المسارات الموصى بها</h2>
+        <div class="dashboard__grid">
+            {% for path in recommended_paths %}
+            <div class="card">
+                <div class="card__header"><h3>{{ path.title }}</h3></div>
+                <div class="card__body">
+                    <p>{{ path.description or '' }}</p>
+                    <span class="badge badge--{{ path.difficulty }}">{{ path.difficulty }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

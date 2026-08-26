@@ -1,0 +1,19 @@
+<aside class="sidebar">
+    <div class="sidebar__section">
+        <h3 class="sidebar__title">التنقل</h3>
+        <a href="/dashboard" class="sidebar__link">لوحة التحكم</a>
+        <a href="/courses" class="sidebar__link">الدورات</a>
+        <a href="/learning-paths" class="sidebar__link">مسارات التعلم</a>
+        <a href="/skills" class="sidebar__link">المهارات</a>
+        <a href="/exercises" class="sidebar__link">التمارين</a>
+        <a href="/projects" class="sidebar__link">المشاريع</a>
+    </div>
+    {% if current_user %}
+    <div class="sidebar__section">
+        <h3 class="sidebar__title">الأدوات</h3>
+        <a href="/ai/tutor" class="sidebar__link">المدرس الذكي</a>
+        <a href="/ai/code-review" class="sidebar__link">مراجعة الكود</a>
+        <a href="/ai/debugging" class="sidebar__link">مساعد التصحيح</a>
+    </div>
+    {% endif %}
+</aside>
