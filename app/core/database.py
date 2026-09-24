@@ -13,16 +13,20 @@ from app.core.config import settings
 
 def _normalize_async_url(url: str) -> str:
     """
-    تأكد من أن DATABASE_URL يستخدم asyncpg driver.
-    يدعم:
-      - postgresql://  → postgresql+asyncpg://
-      - postgres://    → postgresql+asyncpg://
-      - postgresql+asyncpg:// (كما هو)
+    - يحوّل postgres:// و postgresql:// إلى postgresql+asyncpg://
+    - يضيف ssl=require إذا لم يكن موجوداً
     """
+    # 1) توحيد الـ scheme
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    # 2) إضافة ssl=require إذا لم يكن موجوداً
+    if "+asyncpg://" in url and "ssl=" not in url:
+        separator = "&" if "?" in url else "?"
+        url = f"{url}{separator}ssl=require"
+
     return url
 
 
@@ -32,9 +36,9 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=settings.APP_DEBUG,
     pool_pre_ping=True,
-    pool_size=5,          # ⚠️ Render free tier يسمح بعدد اتصالات محدود
-    max_overflow=5,       #    خفّضها من 20/10 لتجنّب "too many connections"
-    pool_recycle=1800,    # إعادة تدوير الاتصالات كل 30 دقيقة
+    pool_size=5,
+    max_overflow=5,
+    pool_recycle=1800,
 )
 
 async_session_factory = async_sessionmaker(
@@ -61,6 +65,5 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_db_no_commit() -> AsyncGenerator[AsyncSession, None]:
-    """For read-only operations; commit handled by caller if needed."""
     async with async_session_factory() as session:
         yield session
