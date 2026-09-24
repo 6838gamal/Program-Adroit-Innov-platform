@@ -1,16 +1,40 @@
+# app/core/database.py
 from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
+
+def _normalize_async_url(url: str) -> str:
+    """
+    تأكد من أن DATABASE_URL يستخدم asyncpg driver.
+    يدعم:
+      - postgresql://  → postgresql+asyncpg://
+      - postgres://    → postgresql+asyncpg://
+      - postgresql+asyncpg:// (كما هو)
+    """
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+DATABASE_URL = _normalize_async_url(settings.DATABASE_URL)
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    DATABASE_URL,
     echo=settings.APP_DEBUG,
     pool_pre_ping=True,
-    pool_size=20,
-    max_overflow=10,
+    pool_size=5,          # ⚠️ Render free tier يسمح بعدد اتصالات محدود
+    max_overflow=5,       #    خفّضها من 20/10 لتجنّب "too many connections"
+    pool_recycle=1800,    # إعادة تدوير الاتصالات كل 30 دقيقة
 )
 
 async_session_factory = async_sessionmaker(
