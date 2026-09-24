@@ -1,9 +1,8 @@
-from datetime import datetime, timezone
-from uuid import UUID
-
+# app/modules/auth/services.py
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import UnauthorizedError
 from app.core.security import generate_token
 from app.modules.auth.oauth import (
     exchange_code_for_tokens,
@@ -19,41 +18,67 @@ class AuthService:
         self.db = db
         self.user_service = UserService(db)
 
+    # ------------------------------------------------------------------
+    # OAuth Flow
+    # ------------------------------------------------------------------
+
     async def get_login_redirect(self, state: str) -> str:
+        """بناء رابط Google لتسجيل الدخول."""
         return await get_google_auth_url(state)
 
     async def handle_callback(self, code: str) -> User:
+        """معالجة رد Google بعد تسجيل الدخول."""
+        # 1) تبادل الكود بـ tokens
         tokens = await exchange_code_for_tokens(code)
         access_token = tokens.get("access_token")
         if not access_token:
-            from app.core.exceptions import UnauthorizedError
-
             raise UnauthorizedError("No access token in Google response")
 
-        userinfo = await get_google_userinfo(access_token, tokens.get("id_token"))
+        # 2) جلب معلومات المستخدم من Google
+        userinfo = await get_google_userinfo(access_token)
+
         email = userinfo.get("email")
-        name = userinfo.get("name", email)
         google_sub = userinfo.get("sub")
+        name = userinfo.get("name") or email
         avatar = userinfo.get("picture")
 
+        # 3) التحقق من اكتمال البيانات
         if not email or not google_sub:
-            from app.core.exceptions import UnauthorizedError
-
             raise UnauthorizedError("Incomplete Google user info")
 
+        # 4) التأكد من أن البريد موثَّق لدى Google
+        if not userinfo.get("email_verified", False):
+            raise UnauthorizedError("Google email not verified")
+
+        # 5) إنشاء/جلب المستخدم من قاعدة البيانات
         user = await self.user_service.get_or_create_from_google(
-            email=email, name=name, google_sub=google_sub, avatar_url=avatar
+            email=email,
+            name=name,
+            google_sub=google_sub,
+            avatar_url=avatar,
         )
         return user
 
+    # ------------------------------------------------------------------
+    # Session
+    # ------------------------------------------------------------------
+
     def create_session(self, request: Request, user: User) -> None:
+        """حفظ بيانات المستخدم في الجلسة."""
         request.session["user_id"] = str(user.id)
         request.session["role"] = user.role.value
         request.session["email"] = user.email
 
     def destroy_session(self, request: Request) -> None:
-        request.session.clear()
+        """حذف بيانات المستخدم من الجلسة (دون مسح الجلسة كاملة)."""
+        for key in ("user_id", "role", "email"):
+            request.session.pop(key, None)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
 
     @staticmethod
     def generate_state() -> str:
+        """توليد state عشوائي لـ OAuth (حماية CSRF)."""
         return generate_token()
