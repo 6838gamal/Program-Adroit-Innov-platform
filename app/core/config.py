@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # Google OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/auth/callback"
+    GOOGLE_REDIRECT_URI: str = ""
     GOOGLE_SCOPE: str = "openid email profile"
 
     # AI Provider
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     RUNNER_CPU_LIMIT: str = "1.0"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    CORS_ORIGINS: str = ""
 
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
