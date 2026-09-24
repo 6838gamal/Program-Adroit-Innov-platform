@@ -13,23 +13,23 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
-    APP_URL: str = "http://localhost:8000"
+    APP_URL: str = ""
     SECRET_KEY: str = "change-me-in-production"
     SESSION_COOKIE_NAME: str = "session"
     SESSION_MAX_AGE: int = 86400
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_learning"
+    DATABASE_URL: str = ""
     PGVECTOR_ENABLED: bool = True
 
     # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = ""
 
     # Google OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = ""
-    GOOGLE_SCOPE: str = "openid email profile"
+    GOOGLE_SCOPE: str = ""
 
     # AI Provider
     AI_PROVIDER: str = "openai"
