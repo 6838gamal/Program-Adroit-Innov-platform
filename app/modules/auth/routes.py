@@ -38,7 +38,7 @@ async def google_login(
 # ------------------------------------------------------------------
 # 2) معالجة رد Google (callback)
 # ------------------------------------------------------------------
-@router.get("/callback")
+@router.get("/google/callback")
 async def google_callback(
     request: Request,
     code: str | None = None,
