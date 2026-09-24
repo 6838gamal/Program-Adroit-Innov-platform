@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
-from app.modules.assessments.models import AssessmentResult
+from app.modules.assessments.models import Assessment ,AssessmentResult
 from app.modules.assessments.repositories import (
     AssessmentRepository,
     AssessmentResultRepository,
