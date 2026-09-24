@@ -68,7 +68,7 @@ app.add_middleware(
 
 # API v1 routes
 api_prefix = "/api/v1"
-app.include_router(auth_router, prefix=api_prefix)
+app.include_router(auth_router)
 app.include_router(users_router, prefix=api_prefix)
 app.include_router(org_router, prefix=api_prefix)
 app.include_router(learning_router, prefix=api_prefix)
