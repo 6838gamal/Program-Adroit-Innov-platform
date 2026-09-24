@@ -16,7 +16,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # ------------------------------------------------------------------
 # 1) بدء تسجيل الدخول — توجيه إلى Google
 # ------------------------------------------------------------------
-@router.get("/auth/login")
+@router.get("/login")
 async def google_login(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -38,7 +38,7 @@ async def google_login(
 # ------------------------------------------------------------------
 # 2) معالجة رد Google (callback)
 # ------------------------------------------------------------------
-@router.get("/auth/callback")
+@router.get("/callback")
 async def google_callback(
     request: Request,
     code: str | None = None,
