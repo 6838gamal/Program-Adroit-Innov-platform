@@ -1,6 +1,7 @@
 # app/core/database.py
 from collections.abc import AsyncGenerator
 import ssl
+from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -12,25 +13,35 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 
+# ⚠️ المعاملات التي لا يقبلها asyncpg ويجب حذفها من الرابط
+_UNSUPPORTED_QUERY_PARAMS = {"sslmode", "ssl", "channel_binding"}
+
+
 def _normalize_async_url(url: str) -> str:
     """
-    يحوّل postgres:// و postgresql:// إلى postgresql+asyncpg://
-    ⚠️ لا يضيف أي معاملات SSL في الرابط — asyncpg لا يقبلها
+    - يحوّل postgres:// و postgresql:// إلى postgresql+asyncpg://
+    - يحذف أي معاملات SSL لا يقبلها asyncpg (sslmode, ssl, channel_binding)
     """
+    # 1) توحيد الـ scheme
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-    # ✅ إزالة أي ssl= أو sslmode= موجودة في الرابط
-    # لأننا سنمررها عبر connect_args
-    if "?" in url:
-        base, query = url.split("?", 1)
-        params = [
-            p for p in query.split("&")
-            if not p.startswith(("ssl=", "sslmode="))
-        ]
-        url = base + ("?" + "&".join(params) if params else "")
+    # 2) حذف معاملات SSL غير المدعومة من query string
+    parsed = urlparse(url)
+    if parsed.query:
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        for key in list(params.keys()):
+            if key.lower() in _UNSUPPORTED_QUERY_PARAMS:
+                del params[key]
+        # إعادة بناء الـ query
+        new_query = urlencode(
+            {k: v[0] for k, v in params.items()},
+            doseq=False,
+        )
+        parsed = parsed._replace(query=new_query)
+        url = urlunparse(parsed)
 
     return url
 
