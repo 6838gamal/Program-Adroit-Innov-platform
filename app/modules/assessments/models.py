@@ -1,12 +1,13 @@
+# app/modules/assessments/models.py
 import uuid
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Enum,
     Float,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
 )
@@ -46,7 +47,7 @@ class Assessment(UUIDMixin, TimestampMixin, Base):
         Integer, nullable=True
     )
 
-    # ⚠️ لا يوجد أي relationship هنا
+    # ⚠️ لا يوجد أي relationship
 
 
 class AssessmentQuestion(UUIDMixin, Base):
@@ -67,15 +68,17 @@ class AssessmentQuestion(UUIDMixin, Base):
     points: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    # ⚠️ لا يوجد أي relationship هنا
+    # ⚠️ لا يوجد أي relationship
 
 
 class AssessmentResult(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "assessment_results"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    # ✅ التعديل 1: user_id → student_id
+    student_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        # ✅ التعديل 2: users.id → students.id
+        ForeignKey("students.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -90,4 +93,4 @@ class AssessmentResult(UUIDMixin, TimestampMixin, Base):
     passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     answers: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
-    # ⚠️ لا يوجد أي relationship هنا
+    # ⚠️ لا يوجد أي relationship
