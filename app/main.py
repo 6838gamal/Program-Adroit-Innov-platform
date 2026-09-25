@@ -1,8 +1,6 @@
+# app/main.py
 from contextlib import asynccontextmanager
-from pathlib import Path
 
-from alembic import command
-from alembic.config import Config
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -13,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
-from app.core.database import engine, get_db
+from app.core.database import Base, engine, get_db
 from app.core.dependencies import get_current_user_optional
 from app.core.logging import setup_logging, get_logger
 
@@ -31,7 +29,7 @@ from app.modules.projects.routes import router as projects_router
 from app.modules.skills.routes import router as skills_router
 from app.modules.users.routes import router as users_router
 
-# ===== استيراد كل الموديلات ليتعرّف عليها Alembic و SQLAlchemy =====
+# ===== استيراد كل الموديلات ليتعرّف عليها SQLAlchemy و Alembic =====
 from app.modules.organizations.models import (  # noqa: F401
     Membership,
     Organization,
@@ -47,6 +45,12 @@ from app.modules.courses.models import (  # noqa: F401
     learning_path_courses,
 )
 from app.modules.lessons.models import Concept, Lesson  # noqa: F401
+from app.modules.skills.models import (  # noqa: F401
+    Skill,
+    SkillAssessment,
+    SkillDependency,
+    StudentSkill,
+)
 from app.modules.exercises.models import (  # noqa: F401
     Exercise,
     ExerciseTest,
@@ -63,6 +67,13 @@ from app.modules.learning.models import (  # noqa: F401
     LearningPath,
     Progress,
 )
+from app.modules.projects.models import (  # noqa: F401
+    Project,
+    ProjectEvaluation,
+    ProjectMilestone,
+    ProjectSubmission,
+    ProjectTask,
+)
 
 setup_logging()
 logger = get_logger(__name__)
@@ -71,35 +82,20 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # =========================================================
-# 1) تشغيل Alembic migrations
+# 1) إنشاء الجداول الناقصة (طبقة أمان)
 # =========================================================
-def _run_migrations() -> None:
-    """تشغيل Alembic migrations عند بدء التطبيق."""
-    base_dir = Path(__file__).resolve().parent.parent
-    alembic_ini = base_dir / "alembic.ini"
-    script_location = base_dir / "alembic"
-
-    logger.info(
-        "alembic_starting",
-        alembic_ini=str(alembic_ini),
-        script_location=str(script_location),
-        ini_exists=alembic_ini.exists(),
-        script_exists=script_location.exists(),
-    )
-
-    if not alembic_ini.exists():
-        logger.error("alembic_ini_missing", path=str(alembic_ini))
-        return
-
-    alembic_cfg = Config(str(alembic_ini))
-    alembic_cfg.set_main_option("script_location", str(script_location))
-    alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-
+async def _ensure_tables() -> None:
+    """
+    إنشاء الجداول الناقصة من الموديلات.
+    ⚠️ ملاحظة: create_all لا يعدّل الجداول الموجودة.
+    """
+    logger.info("ensure_tables_starting")
     try:
-        command.upgrade(alembic_cfg, "head")
-        logger.info("alembic_upgrade_success", revision="head")
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("ensure_tables_success")
     except Exception as exc:
-        logger.error("alembic_upgrade_failed", error=str(exc), exc_info=True)
+        logger.error("ensure_tables_failed", error=str(exc), exc_info=True)
         raise
 
 
@@ -148,10 +144,10 @@ async def _check_tables() -> None:
 async def lifespan(app: FastAPI):
     logger.info("app_starting", app=settings.APP_NAME, env=settings.APP_ENV)
 
-    # 1) شغّل migrations
-    _run_migrations()
+    # ✅ 1) أنشئ الجداول الناقصة (بما فيها students)
+    await _ensure_tables()
 
-    # 2) تحقق من الجداول
+    # ✅ 2) اطبع الجداول للتشخيص
     await _check_tables()
 
     yield
