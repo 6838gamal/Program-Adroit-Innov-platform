@@ -19,7 +19,13 @@
                     <a href="/admin" class="navbar__link">الإدارة</a>
                 {% endif %}
                 <a href="/profile" class="navbar__link">{{ current_user.name }}</a>
-                <a href="/auth/logout" class="navbar__link navbar__link--danger">خروج</a>
+
+                {# تسجيل الخروج عبر POST لتجنب 405 ولأسباب أمنية #}
+                <form action="/auth/logout" method="POST" class="navbar__logout-form">
+                    <button type="submit" class="navbar__link navbar__link--danger navbar__logout-btn">
+                        خروج
+                    </button>
+                </form>
             {% else %}
                 <a href="/auth/login" class="navbar__link navbar__link--primary">تسجيل الدخول بـ Google</a>
             {% endif %}
