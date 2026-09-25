@@ -65,15 +65,15 @@ class Course(UUIDMixin, TimestampMixin, Base):
         nullable=True,
         index=True,
     )
-    # ملاحظة: created_by يشير إلى users (احتياطي)
+    # ✅ التعديل: users.id → students.id
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("students.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
-    # ⚠️ لا relationships — استعلامات صريحة فقط
+    # ⚠️ لا relationships
 
 
 class Module(UUIDMixin, TimestampMixin, Base):
