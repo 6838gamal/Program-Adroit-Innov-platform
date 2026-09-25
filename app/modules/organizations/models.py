@@ -1,7 +1,16 @@
+# app/modules/organizations/models.py
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,25 +30,28 @@ class Organization(UUIDMixin, TimestampMixin, Base):
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
-    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
 
-    # المالك (User) — FK فقط
+    # ✅ owner_id → students.id
     owner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("students.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
-    # ⚠️ لا يوجد أي relationship هنا
+    # ⚠️ لا relationships
 
 
 class Membership(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "memberships"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    # ✅ student_id بدلاً من user_id
+    student_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("students.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -63,7 +75,7 @@ class Membership(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
 
-    # ⚠️ لا يوجد أي relationship هنا
+    # ⚠️ لا relationships
 
 
 class Role(UUIDMixin, TimestampMixin, Base):
