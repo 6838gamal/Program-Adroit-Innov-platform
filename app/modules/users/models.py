@@ -11,7 +11,7 @@ from app.shared.base_models import TimestampMixin, UUIDMixin
 from app.shared.enums import UserRole
 
 
-class Student(UUIDMixin, TimestampMixin, Base):
+class User(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "students"
 
     # ===== المصادقة =====
