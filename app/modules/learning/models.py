@@ -1,3 +1,4 @@
+# app/modules/enrollments/models.py
 import uuid
 from datetime import datetime
 
@@ -47,9 +48,10 @@ class LearningPath(UUIDMixin, TimestampMixin, Base):
         nullable=True,
         index=True,
     )
+    # ✅ التعديل: users.id → students.id
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("students.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
