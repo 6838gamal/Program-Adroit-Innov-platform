@@ -58,7 +58,7 @@ from app.modules.assessments.models import (  # noqa: F401
     AssessmentQuestion,
     AssessmentResult,
 )
-from app.modules.enrollments.models import (  # noqa: F401
+from app.modules.learning.models import (  # noqa: F401
     Enrollment,
     LearningPath,
     Progress,
