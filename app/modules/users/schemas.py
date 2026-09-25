@@ -1,3 +1,4 @@
+# app/modules/users/schemas.py
 from datetime import datetime
 from uuid import UUID
 
@@ -9,7 +10,7 @@ from app.shared.schemas import IDMixin, TimestampMixin
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: str
+    full_name: str                          # ✅ full_name بدلاً من name
     avatar_url: str | None = None
     role: UserRole = UserRole.STUDENT
     bio: str | None = None
@@ -17,14 +18,15 @@ class UserBase(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    name: str
+    full_name: str                          # ✅ full_name بدلاً من name
     avatar_url: str | None = None
     google_sub: str | None = None
+    hashed_password: str | None = None      # ✅ أُضيف (اختياري، لـ OAuth)
     role: UserRole = UserRole.STUDENT
 
 
 class UserUpdate(BaseModel):
-    name: str | None = None
+    full_name: str | None = None            # ✅ full_name بدلاً من name
     avatar_url: str | None = None
     bio: str | None = None
 
@@ -40,7 +42,7 @@ class UserProfile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     email: EmailStr
-    name: str
+    full_name: str                          # ✅ full_name بدلاً من name
     avatar_url: str | None = None
     role: UserRole
     organization_id: UUID | None = None
