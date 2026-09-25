@@ -1,3 +1,4 @@
+# app/modules/users/services.py
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -26,30 +27,42 @@ class UserService:
         return await self.repo.update(user, data)
 
     async def get_or_create_from_google(
-        self, email: str, name: str, google_sub: str, avatar_url: str | None = None
+        self,
+        email: str,
+        name: str,
+        google_sub: str,
+        avatar_url: str | None = None,
     ) -> User:
+        # 1) ابحث بـ google_sub
         user = await self.repo.get_by_google_sub(google_sub)
         if user:
             user.last_login_at = datetime.now(timezone.utc)
             await self.repo.db.flush()
             return user
 
+        # 2) ابحث بالبريد (حساب قديم بدون google_sub)
         user = await self.repo.get_by_email(email)
         if user:
             user.google_sub = google_sub
             user.last_login_at = datetime.now(timezone.utc)
+            if avatar_url:
+                user.avatar_url = avatar_url
             await self.repo.db.flush()
             return user
 
+        # 3) أنشئ مستخدماً/طالباً جديداً
+        # ✅ full_name بدلاً من name
         create_data = UserCreate(
             email=email,
-            name=name,
+            full_name=name,
             google_sub=google_sub,
             avatar_url=avatar_url,
         )
         return await self.repo.create(create_data)
 
-    async def list_users(self, limit: int = 50, offset: int = 0) -> tuple[list[User], int]:
+    async def list_users(
+        self, limit: int = 50, offset: int = 0
+    ) -> tuple[list[User], int]:
         return await self.repo.list_users(limit, offset)
 
     async def list_by_organization(self, org_id: UUID) -> list[User]:
