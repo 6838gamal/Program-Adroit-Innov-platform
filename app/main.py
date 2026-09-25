@@ -39,7 +39,7 @@ from app.modules.organizations.models import (  # noqa: F401
     Role,
     RolePermission,
 )
-from app.modules.students.models import User  # noqa: F401  ← جدول students
+from app.modules.users.models import User  # noqa: F401  ← جدول students
 from app.modules.courses.models import (  # noqa: F401
     Course,
     CourseSkill,
