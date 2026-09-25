@@ -7,9 +7,14 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
-from app.core.database import Base
+from app.core.database import (
+    Base,
+    _normalize_async_url,   # ✅ استيراد الدالة
+    _make_ssl_context,      # ✅ استيراد SSL context
+)
 
 # ⚠️ استيراد كل الموديلات ليتعرّف عليها Alembic
+# لا تحذف أي استيراد حتى لو بدا غير مستخدم
 from app.modules.users.models import User  # noqa
 from app.modules.organizations.models import (  # noqa
     Membership,
@@ -57,8 +62,10 @@ from app.modules.projects.models import (  # noqa
 
 config = context.config
 
-# املأ sqlalchemy.url (لا يُستخدم فعلياً في الحل الجديد، لكنه مطلوب)
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# ✅ استخدم نفس الدالة التي يستخدمها التطبيق
+# هذا يضمن أن الرابط يحتوي +asyncpg
+DATABASE_URL = _normalize_async_url(settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -82,8 +89,8 @@ def do_run_migrations(connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        compare_type=True,          # ← يرصد تغييرات نوع الأعمدة
-        compare_server_default=True, # ← يرصد تغييرات القيم الافتراضية
+        compare_type=True,            # ← يرصد تغييرات نوع الأعمدة
+        compare_server_default=True,  # ← يرصد تغييرات القيم الافتراضية
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -91,13 +98,13 @@ def do_run_migrations(connection) -> None:
 
 def run_migrations_online() -> None:
     """
-    ✅ الحل: أنشئ async engine مباشرة من settings.DATABASE_URL
-    بدلاً من async_engine_from_config التي تفشل مع asyncpg.
+    ✅ الحل النهائي: استخدم DATABASE_URL المحوَّل صراحةً.
+    لم يعد SQLAlchemy يحاول psycopg2.
     """
     connectable = create_async_engine(
-        settings.DATABASE_URL,
+        DATABASE_URL,                          # ← URL محوَّل (asyncpg)
         poolclass=pool.NullPool,
-        connect_args={"ssl": True},   # ← نفس إعدادات التطبيق
+        connect_args={"ssl": _make_ssl_context()},  # ← نفس SSL context
     )
 
     async def _run():
