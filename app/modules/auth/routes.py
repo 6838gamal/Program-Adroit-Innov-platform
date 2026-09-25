@@ -14,9 +14,57 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # ------------------------------------------------------------------
-# 1) بدء تسجيل الدخول — توجيه إلى Google
+# 0) صفحة تسجيل الدخول (HTML)
 # ------------------------------------------------------------------
 @router.get("/login")
+async def login_page(
+    request: Request,
+    next: str | None = None,
+    error: str | None = None,
+):
+    """
+    صفحة تسجيل الدخول.
+    - لا تبدأ OAuth تلقائياً (حتى لا يعود المستخدم مسجّلاً بعد logout)
+    - تعرض زر "الدخول بحساب Google"
+    - تحفظ `next` لإعادة المستخدم للمسار المطلوب بعد الدخول
+    """
+    # امسح أي state قديم لتجنب تسريب الجلسة السابقة
+    request.session.pop("oauth_state", None)
+
+    # احفظ المسار المطلوب للعودة إليه لاحقاً
+    if next:
+        request.session["next_url"] = next
+
+    # إذا كان المستخدم مسجّلاً بالفعل، وجّهه مباشرة
+    if request.session.get("user_id"):
+        target = request.session.pop("next_url", None) or "/dashboard"
+        return RedirectResponse(url=target, status_code=303)
+
+    # إذا كنت تستخدم Jinja2، أرجِع صفحة HTML حقيقية.
+    # إن لم يكن القالب موجوداً بعد، يمكنك استخدام JSON مؤقتاً.
+    try:
+        from app.templates import templates
+
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {
+                "request": request,
+                "error": error,
+            },
+        )
+    except Exception:
+        # fallback مؤقت إذا لم يوجد القالب
+        return {
+            "authenticated": False,
+            "message": "الرجاء تسجيل الدخول",
+            "login_url": "/auth/google",
+        }
+
+
+# ------------------------------------------------------------------
+# 1) بدء تسجيل الدخول — توجيه إلى Google
+# ------------------------------------------------------------------
+@router.get("/google")
 async def google_login(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -51,12 +99,12 @@ async def google_callback(
     - يتحقق من state (حماية CSRF)
     - يتبادل code بـ tokens
     - ينشئ جلسة للمستخدم
-    - يعيد التوجيه إلى /dashboard
+    - يعيد التوجيه إلى /dashboard أو next_url
     """
     # خطأ من Google مباشرة
     if error:
         return RedirectResponse(
-            url=f"{settings.APP_URL}/auth/error?error={error}",
+            url=f"{settings.APP_URL}/auth/login?error={error}",
             status_code=302,
         )
 
@@ -74,17 +122,19 @@ async def google_callback(
         service.create_session(request, user)
     except UnauthorizedError:
         raise
-    except Exception as e:
+    except Exception:
         # تسجيل الخطأ وإعادة التوجيه لصفحة خطأ
         import logging
 
         logging.getLogger(__name__).exception("oauth_callback_failed")
         return RedirectResponse(
-            url=f"{settings.APP_URL}/auth/error?error=oauth_failed",
+            url=f"{settings.APP_URL}/auth/login?error=oauth_failed",
             status_code=302,
         )
 
-    return RedirectResponse(url=f"{settings.APP_URL}/dashboard", status_code=302)
+    # وجّه المستخدم للمسار الذي كان يقصده، أو /dashboard
+    target = request.session.pop("next_url", None) or "/dashboard"
+    return RedirectResponse(url=target, status_code=302)
 
 
 # ------------------------------------------------------------------
@@ -107,18 +157,37 @@ async def auth_error(
 
 
 # ------------------------------------------------------------------
-# 4) تسجيل الخروج
+# 4) تسجيل الخروج — يدمّر الجلسة ويوجّه لصفحة تسجيل الدخول
 # ------------------------------------------------------------------
 @router.post("/logout")
 async def logout(
     request: Request,
-    user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ):
-    """يدمّر جلسة المستخدم."""
+    """
+    - يدمّر جلسة المستخدم
+    - يحذف كوكي الجلسة من المتصفح
+    - يوجّه إلى /auth/login بحالة 303
+    لا نطلب CurrentUser هنا حتى ينجح الخروج
+    حتى لو كانت الجلسة منتهية أصلاً.
+    """
     service = AuthService(db)
     service.destroy_session(request)
-    return MessageResponse(message="Logged out successfully")
+
+    response = RedirectResponse(
+        url="/auth/login",
+        status_code=303,  # 303 = POST → GET redirect
+    )
+
+    # احذف كوكي الجلسة من المتصفح أيضاً (احتياط مزدوج)
+    response.delete_cookie(
+        key=settings.SESSION_COOKIE_NAME if hasattr(settings, "SESSION_COOKIE_NAME") else "session",
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return response
 
 
 # ------------------------------------------------------------------
