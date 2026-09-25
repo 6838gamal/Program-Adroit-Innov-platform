@@ -1,5 +1,6 @@
 # app/core/database.py
 from collections.abc import AsyncGenerator
+import ssl
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -13,24 +14,27 @@ from app.core.config import settings
 
 def _normalize_async_url(url: str) -> str:
     """
-    - يحوّل postgres:// و postgresql:// إلى postgresql+asyncpg://
-    - يضيف ssl=require إذا لم يكن موجوداً
+    يحوّل postgres:// و postgresql:// إلى postgresql+asyncpg://
     """
-    # 1) توحيد الـ scheme
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
-    # 2) إضافة ssl=require إذا لم يكن موجوداً
-    if "+asyncpg://" in url and "ssl=" not in url:
-        separator = "&" if "?" in url else "?"
-        url = f"{url}{separator}ssl=require"
-
     return url
 
 
+def _make_ssl_context() -> ssl.SSLContext:
+    """SSL context مطلوب للاتصال بقاعدة بيانات Render من الخارج."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
 DATABASE_URL = _normalize_async_url(settings.DATABASE_URL)
+
+# ✅ SSL يُمرر كـ connect_arg وليس في الرابط
+_connect_args = {"ssl": _make_ssl_context()}
 
 engine = create_async_engine(
     DATABASE_URL,
@@ -39,6 +43,7 @@ engine = create_async_engine(
     pool_size=5,
     max_overflow=5,
     pool_recycle=1800,
+    connect_args=_connect_args,
 )
 
 async_session_factory = async_sessionmaker(
